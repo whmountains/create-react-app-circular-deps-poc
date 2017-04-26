@@ -21,6 +21,7 @@ var getProcessForPort = require('react-dev-utils/getProcessForPort');
 var openBrowser = require('react-dev-utils/openBrowser');
 var prompt = require('react-dev-utils/prompt');
 var fs = require('fs');
+var path = require('path');
 var now = require('performance-now')
 var circularJSON = require('circular-json');
 var config = require('../config/webpack.config.dev');
@@ -79,8 +80,10 @@ function checkForCyclesInner (module, path) {
   const newPath = [...path, module]
 
   // if we've seen this path before, then abort here
-  if (path.includes(module)) {
-    return console.log('cycle found', sanitizePath(newPath))
+  const previousIndex = path.findIndex(m => m === module)
+  if (previousIndex !== -1) {
+    const cyclePath = newPath.slice(previousIndex)
+    return console.log('cycle found', sanitizePath(cyclePath))
   }
 
   // otherwise continue tracing
@@ -98,11 +101,8 @@ function checkForCyclesInner (module, path) {
 }
 
 function checkForCycles (modules) {
-  modules.filter(m => m.resource && !m.resource.includes('node_modules')).forEach(module => {
-    // console.log('tracing deps for', module.resource)
-
-    checkForCyclesInner(module, [])
-  })
+  const entry = modules.find(m => m.resource && m.resource === path.join(__dirname, '../src/index.js'))
+  checkForCyclesInner(entry, [])
 }
 
 function setupCompiler(host, port, protocol) {
